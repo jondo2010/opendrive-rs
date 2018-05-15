@@ -6,7 +6,7 @@ extern crate log;
 extern crate serde_xml_rs;
 
 mod util;
-use util::flexible_boolean;
+use util::{flexible_boolean, odr_dateformat};
 
 fn init_logger() {
     use log::{LogLevel, LogMetadata, LogRecord};
@@ -29,52 +29,6 @@ fn init_logger() {
         max_log_level.set(log::LogLevelFilter::Debug);
         Box::new(SimpleLogger)
     });
-}
-
-/*
-fn string_as_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
-where
-    D: serde::de::Deserializer<'de>,
-{
-    deserializer.deserialize_f64(F64Visitor)
-}
-
-struct F64Visitor;
-impl<'de> serde::de::Visitor<'de> for F64Visitor {
-    type Value = f64;
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("a string representation of a f64")
-    }
-    fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        s.parse::<f64>().map_err(serde::de::Error::custom)
-    }
-}
-*/
-
-mod odr_dateformat {
-    use chrono::{DateTime, TimeZone, Utc};
-    use serde::{self, Deserialize, Deserializer, Serializer};
-    const DATE_FORMAT: &'static str = "%a %b %d %H:%M:%S %Y";
-
-    pub fn serialize<S>(date: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let s = format!("{}", date.format(DATE_FORMAT));
-        serializer.serialize_str(&s)
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Utc.datetime_from_str(&s, DATE_FORMAT)
-            .map_err(serde::de::Error::custom)
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -635,7 +589,7 @@ mod tests {
                 <successor elementType="road" elementId="3" contactPoint="start"/>
             </link>
             <planView>
-                <geometry s="0.0" x="-7.2e+01" y="-5.1e+00" hdg="7.9e-03" length="1.04e+02"> 
+                <geometry s="0.0" x="-7.2e+01" y="-5.1e+00" hdg="7.9e-03" length="1.04e+02">
                     <line />
                 </geometry>
             </planView>

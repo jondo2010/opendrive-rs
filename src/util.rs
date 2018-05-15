@@ -23,3 +23,27 @@ pub mod flexible_boolean {
         })
     }
 }
+
+pub mod odr_dateformat {
+    use chrono::{DateTime, TimeZone, Utc};
+    use serde::{self, Deserialize, Deserializer, Serializer};
+    const DATE_FORMAT: &'static str = "%a %b %d %H:%M:%S %Y";
+
+    pub fn serialize<S>(date: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = format!("{}", date.format(DATE_FORMAT));
+        serializer.serialize_str(&s)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Utc.datetime_from_str(&s, DATE_FORMAT)
+            .map_err(serde::de::Error::custom)
+    }
+}
+
