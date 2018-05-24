@@ -1,6 +1,6 @@
 use chrono;
-use errors::*;
 use parse_util::*;
+use errors;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "OpenDRIVE")]
@@ -162,8 +162,6 @@ impl Default for Direction {
     }
 }
 
-use errors;
-
 /// The plan view record contains a series of geometry records which define the
 /// layout of the road's reference line in the x/y-plane (plan view).
 #[derive(Default, Debug, Serialize, Deserialize, PartialEq)]
@@ -173,14 +171,15 @@ pub struct PlanView {
     pub geometries: Vec<Geometry>,
 }
 impl PlanView {
-    pub fn validate(&self) -> errors::Result<()> {
-        use super::is_monotonic;
+    pub fn validate(&self) -> Result<(), errors::ValidationError> {
+        use super::Monotonic;
+
         // The s values in each Geometry element must monotonically increase
-        let ss = self.geometries.iter().map(|g| g.s);
-        ensure!(
-            super::is_monotonic(&ss),
-            ErrorKind::Validation("s values in geometry not monotonic".to_string())
-        );
+        if !self.geometries.iter().map(|g| g.s).is_monotonic() {
+            return Err(errors::ValidationError::ReferenceLineGeometry(
+                "s values in geometry not monotonic",
+            ));
+        }
 
         Ok(())
     }

@@ -1,39 +1,33 @@
-// `error_chain!` can recurse deeply
-#![recursion_limit = "1024"]
-
-#[macro_use]
-extern crate error_chain;
-
+extern crate failure;
+#[macro_use] extern crate failure_derive;
 extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-
+#[macro_use] extern crate serde_derive;
 extern crate chrono;
 extern crate serde_xml_rs;
-//extern crate env_logger;
+extern crate proj5;
 
 mod errors;
 mod opendrive;
 mod parse_util;
-#[cfg(test)]
-mod tests;
+#[cfg(test)] mod tests;
+#[cfg(test)] mod tests2;
 
-pub use errors::*;
 pub use opendrive::*;
 
 /// Check if a collection is monotonically increasing
-fn is_monotonic<T, I>(col: &T) -> bool
-where
-    for<'a> &'a T: IntoIterator<Item = &'a I>,
-    I: PartialOrd,
-{
-    !col.into_iter()
-        .zip(col.into_iter().skip(1))
-        .any(|t: (&I, &I)| t.0 > t.1)
+trait Monotonic: Iterator {
+    fn is_monotonic(self) -> bool
+    where
+        Self::Item: PartialOrd,
+        Self: Sized + Clone,
+    {
+        self.clone().zip(self.skip(1)).by_ref().all(|(a, b)| a < b)
+    }
 }
+impl<I: Iterator> Monotonic for I {}
 
 /// Deserializes LVM file data from the specified reader
-pub fn from_reader<R: std::io::Read>(input: R) -> errors::Result<opendrive::Root> {
+pub fn from_reader<R: std::io::Read>(input: R) -> Result<opendrive::Root, failure::Error> {
     let root: opendrive::Root = serde_xml_rs::from_reader(input).unwrap();
     return Ok(root);
 }
