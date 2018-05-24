@@ -1,0 +1,6 @@
+{
+    "rust-client.channel": "nightly",
+    "rust-client.updateOnStartup": true,
+    "rust.cfg_test": true,
+    "rust.unstable_features": true,
+}
