@@ -15,7 +15,6 @@ fn test_monotonic() {
 #[cfg(test)]
 mod parsing {
     use opendrive;
-    use euclid;
 
     #[test]
     fn test_header() {
@@ -81,16 +80,26 @@ mod parsing {
             od.roads[0],
             opendrive::Road {
                 name: "test_road".to_string(),
-                length: 1.0478122375188772e+02,
+                length: opendrive::types::Length::new(1.0478122375188772e+02),
                 id: 1,
                 junction: -1,
                 link: None,
                 plan_view: Default::default(),
-                //elevation_profile: None,
-                //lateral_profile: None
-                ..Default::default()
+                elevation_profile: None,
+                lateral_profile: None,
+                lanes: None,
             }
         );
+    }
+
+    #[test]
+    fn test_geometry() {
+        let s = r##"
+            <geometry s="0.0" x="3.1936295054484493e+01" y="-4.3587594300083827e+00" hdg="7.9998293398869432e-03" length="2.0721630948442136e+00"><line/></geometry>
+        "##;
+        use serde_xml_rs::from_str;
+        let geo: opendrive::Geometry = from_str(s).unwrap();
+        assert_eq!(geo.hdg, opendrive::types::Angle::radians(7.9998293398869432e-03));
     }
 
     #[test]
@@ -126,8 +135,8 @@ mod parsing {
             road.plan_view.geometries[0],
             opendrive::Geometry {
                 s: opendrive::types::Length::new(0.0),
-                x: -7.2e1,
-                y: -5.1,
+                x: opendrive::types::Length::new(-7.2e1),
+                y: opendrive::types::Length::new(-5.1),
                 //hdg: euclid::Angle<f64>{7.9e-03},
                 hdg: opendrive::types::Angle::radians(7.9e-03),
                 length: opendrive::types::Length::new(1.04e+02),
@@ -267,6 +276,10 @@ mod parsing {
         let plan_view: opendrive::PlanView = from_str(s).unwrap();
         assert_eq!(plan_view.validate().unwrap(), ());
         println!("Length: {}", plan_view.sum_length());
+
+        
+        // arc
+        
     }
 
     #[test]

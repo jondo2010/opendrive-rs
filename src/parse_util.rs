@@ -46,3 +46,25 @@ pub mod odr_dateformat {
             .map_err(serde::de::Error::custom)
     }
 }
+
+/// This module overrides the Derived Serialize and Deserialize traits on Angle
+/// from the euclid crate in order to flatten the value
+pub mod angle {
+    use serde::{self, Deserialize, Deserializer, Serializer};
+    use types;
+
+    pub fn serialize<S>(angle: &types::Angle, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = format!("{}", angle.radians);
+        serializer.serialize_str(&s)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<types::Angle, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(types::Angle::radians(try!(Deserialize::deserialize(deserializer))))
+    }
+}

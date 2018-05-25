@@ -1,6 +1,7 @@
 use proj5::prelude::*;
 
 #[test]
+#[ignore]
 fn test_proj() {
     let ellipsoid = WGS_1984_ELLIPSOID;
 

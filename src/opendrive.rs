@@ -1,6 +1,7 @@
 use chrono;
 use errors;
-use parse_util::*;
+use lyon_geom;
+use parse_util;
 
 pub mod units {
     pub struct Meter;
@@ -10,12 +11,8 @@ pub mod types {
     use euclid;
     pub type Length = euclid::Length<f64, super::units::Meter>;
     pub type Angle = euclid::Angle<f64>;
-}
 
-const ZERO_LENGTH: types::Length = types::Length::new(0.0);
-
-fn default_length() -> types::Length {
-    types::Length::new(0.0)
+    pub type Rotation = euclid::TypedRotation2D<f64, super::units::Meter, super::units::Meter>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -37,7 +34,7 @@ pub struct Header {
     pub name: String,
     /// version number of this database (format: a.bb)
     pub version: f32,
-    #[serde(with = "odr_dateformat", default = "Header::default_date")]
+    #[serde(with = "parse_util::odr_dateformat", default = "Header::default_date")]
     /// time/date of database creation according to ISO 8601 (preference: YYYY-MM-DDThh:mm:ss)
     pub date: chrono::DateTime<chrono::Utc>,
     /// maximum inertial y value [m]
@@ -79,13 +76,12 @@ pub struct GeoReference {
 /// The road header record defines the basic parameters of an individual road.
 /// It is followed immediately by other records defining geometry and logical
 /// properties of the road.
-#[derive(Default, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename = "road", rename_all = "camelCase")]
 pub struct Road {
     /// name of the road
     pub name: String,
     /// total length of the reference line in the xy-plane
-    #[serde(default = "default_length")]
     pub length: types::Length,
     /// unique ID within database
     pub id: u8,
@@ -218,11 +214,7 @@ impl PlanView {
 
     /// Sum up the lengths of all Geometry elements
     pub fn sum_length(&self) -> types::Length {
-        use std;
-        types::Length {
-            0: self.geometries.iter().fold(0.0, |acc, g| g.length.0 + acc),
-            1: std::marker::PhantomData,
-        }
+        types::Length::new(self.geometries.iter().fold(0.0, |acc, g| g.length.0 + acc))
     }
 }
 
@@ -247,16 +239,72 @@ pub struct Geometry {
     /// m [0,∞[ start position (s-coordinate)
     pub s: types::Length,
     /// m ]-∞,∞[ start position (x inertial)
-    pub x: f64,
+    pub x: types::Length,
     /// m ]-∞,∞[ start position (y inertial)
-    pub y: f64,
+    pub y: types::Length,
     /// rad ]-∞,∞[ start orientation (inertial heading)
+    #[serde(with = "parse_util::angle")]
     pub hdg: types::Angle,
     /// m [0,∞[ length of the element's reference line
     pub length: types::Length,
-
     #[serde(rename = "$value")]
     pub element: GeometryElement,
+}
+impl Geometry {
+    pub fn poo() {
+        use euclid;
+        use lyon_path;
+        use lyon_path::builder::{FlatPathBuilder, PathBuilder};
+
+        let mut builder = lyon_path::default::Path::builder();
+        builder.move_to(euclid::point2(0.0, 0.0));
+        builder.line_to(euclid::point2(1.0, 2.0));
+        builder.line_to(euclid::point2(2.0, 0.0));
+        builder.line_to(euclid::point2(1.0, 1.0));
+        builder.close();
+
+        let path = builder.build();
+        for event in &path {
+            println!("{:?}", event);
+        }
+    }
+
+    pub fn blah(&self) {
+        use euclid;
+        match self.element {
+            GeometryElement::Line => {
+                /*
+                let g: &opendrive::Geometry = &plan_view.geometries[0];
+                let start = euclid::TypedVector2D::from_lengths(g.x, g.y);
+                let rot = opendrive::types::Rotation::new(g.hdg);
+                let v = euclid::TypedVector2D::from_lengths(
+                    g.length,
+                    opendrive::types::Length::new(0.0),
+                );
+                let end = start + rot.transform_vector(&v);
+
+                let g1: &opendrive::Geometry = &plan_view.geometries[1];
+                let start1 = euclid::TypedVector2D::from_lengths(g1.x, g1.y);
+
+                println!("start: {:#?}, end: {:#?}", start, end);
+                assert_eq!(end, start1);
+                */
+            }
+            GeometryElement::Spiral {
+                curv_start,
+                curv_end,
+            } => {}
+            GeometryElement::Arc { curvature } => {
+                let start = euclid::TypedVector2D::from_lengths(self.x, self.y);
+
+                let start_angle = self.hdg;
+                let sweep_angle = self.length * curvature;
+                let rot = types::Rotation::new(self.hdg);
+                //let center = (rot - opendrive::types::Angle::frac_pi_4).tran
+            }
+            GeometryElement::Poly3 { a, b, c, d } => {}
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -382,7 +430,7 @@ pub struct Lane {
     /// "true" = keep lane on level, .i.e. do not apply superelevation or
     /// crossfall. "false" = apply superelevation and crossfall to this lane
     /// (default, also used if argument level is missing)
-    #[serde(with = "flexible_boolean")]
+    #[serde(with = "parse_util::flexible_boolean")]
     pub level: bool,
 
     /// In order to facilitate navigation through a road network on a per-lane

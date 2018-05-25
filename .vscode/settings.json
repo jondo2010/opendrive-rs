@@ -3,4 +3,5 @@
     "rust-client.updateOnStartup": true,
     "rust.cfg_test": true,
     "rust.unstable_features": true,
+    "rust.wait_to_build": 500
 }
