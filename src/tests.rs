@@ -15,6 +15,7 @@ fn test_monotonic() {
 #[cfg(test)]
 mod parsing {
     use opendrive;
+    use euclid;
 
     #[test]
     fn test_header() {
@@ -124,11 +125,12 @@ mod parsing {
         assert_eq!(
             road.plan_view.geometries[0],
             opendrive::Geometry {
-                s: 0.0,
+                s: opendrive::types::Length::new(0.0),
                 x: -7.2e1,
                 y: -5.1,
-                hdg: 7.9e-03,
-                length: 1.04e+02,
+                //hdg: euclid::Angle<f64>{7.9e-03},
+                hdg: opendrive::types::Angle::radians(7.9e-03),
+                length: opendrive::types::Length::new(1.04e+02),
                 element: opendrive::GeometryElement::Line,
             }
         );
@@ -264,6 +266,7 @@ mod parsing {
         use serde_xml_rs::from_str;
         let plan_view: opendrive::PlanView = from_str(s).unwrap();
         assert_eq!(plan_view.validate().unwrap(), ());
+        println!("Length: {}", plan_view.sum_length());
     }
 
     #[test]

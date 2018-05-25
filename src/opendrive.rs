@@ -1,6 +1,22 @@
 use chrono;
-use parse_util::*;
 use errors;
+use parse_util::*;
+
+pub mod units {
+    pub struct Meter;
+}
+
+pub mod types {
+    use euclid;
+    pub type Length = euclid::Length<f64, super::units::Meter>;
+    pub type Angle = euclid::Angle<f64>;
+}
+
+const ZERO_LENGTH: types::Length = types::Length::new(0.0);
+
+fn default_length() -> types::Length {
+    types::Length::new(0.0)
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "OpenDRIVE")]
@@ -69,7 +85,8 @@ pub struct Road {
     /// name of the road
     pub name: String,
     /// total length of the reference line in the xy-plane
-    pub length: f64,
+    #[serde(default = "default_length")]
+    pub length: types::Length,
     /// unique ID within database
     pub id: u8,
     /// ID of the junction to which the road belongs as a connecting road (= -1 for none)
@@ -85,6 +102,20 @@ pub struct Road {
     /// along the reference line.
     #[serde(default)]
     pub lanes: Option<Lanes>,
+}
+impl Road {
+    pub fn validate(&self) -> Result<(), errors::ValidationError> {
+        //self.plan_view.validate()?;
+        let sum_length = self.plan_view.sum_length();
+        if self.length != sum_length {
+            return Err(errors::ValidationError::ReferenceLineLength((
+                self.length,
+                sum_length,
+            )));
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -170,6 +201,7 @@ pub struct PlanView {
     #[serde(default, rename = "geometry")]
     pub geometries: Vec<Geometry>,
 }
+
 impl PlanView {
     pub fn validate(&self) -> Result<(), errors::ValidationError> {
         use super::Monotonic;
@@ -182,6 +214,15 @@ impl PlanView {
         }
 
         Ok(())
+    }
+
+    /// Sum up the lengths of all Geometry elements
+    pub fn sum_length(&self) -> types::Length {
+        use std;
+        types::Length {
+            0: self.geometries.iter().fold(0.0, |acc, g| g.length.0 + acc),
+            1: std::marker::PhantomData,
+        }
     }
 }
 
@@ -204,15 +245,15 @@ impl PlanView {
 #[serde(rename_all = "camelCase")]
 pub struct Geometry {
     /// m [0,∞[ start position (s-coordinate)
-    pub s: f64,
+    pub s: types::Length,
     /// m ]-∞,∞[ start position (x inertial)
     pub x: f64,
     /// m ]-∞,∞[ start position (y inertial)
     pub y: f64,
     /// rad ]-∞,∞[ start orientation (inertial heading)
-    pub hdg: f64,
+    pub hdg: types::Angle,
     /// m [0,∞[ length of the element's reference line
-    pub length: f64,
+    pub length: types::Length,
 
     #[serde(rename = "$value")]
     pub element: GeometryElement,

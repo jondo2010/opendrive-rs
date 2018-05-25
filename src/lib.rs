@@ -5,6 +5,7 @@ extern crate serde;
 extern crate chrono;
 extern crate serde_xml_rs;
 extern crate proj5;
+extern crate euclid;
 
 mod errors;
 mod opendrive;
