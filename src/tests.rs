@@ -277,8 +277,8 @@ mod parsing {
         assert_eq!(plan_view.validate().unwrap(), ());
         println!("Length: {}", plan_view.sum_length());
 
-        
-        // arc
+        let g = &plan_view.geometries[0];
+        g.as_segment().
         
     }
 

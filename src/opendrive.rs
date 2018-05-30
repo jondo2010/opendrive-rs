@@ -1,6 +1,7 @@
 use chrono;
 use errors;
 use lyon_geom;
+use lyon_path;
 use parse_util;
 
 pub mod units {
@@ -9,10 +10,19 @@ pub mod units {
 
 pub mod types {
     use euclid;
-    pub type Length = euclid::Length<f64, super::units::Meter>;
+    use lyon_geom;
+
+    pub type Length = euclid::Length<f64, euclid::UnknownUnit>; //, super::units::Meter>;
     pub type Angle = euclid::Angle<f64>;
 
-    pub type Rotation = euclid::TypedRotation2D<f64, super::units::Meter, super::units::Meter>;
+    pub type Rotation = euclid::TypedRotation2D<f64, euclid::UnknownUnit, euclid::UnknownUnit>; //, super::units::Meter, super::units::Meter>;
+
+    pub enum Segment {
+        Line(lyon_geom::LineSegment<f64>),
+        Quadratic(lyon_geom::QuadraticBezierSegment<f64>),
+        Cubic(lyon_geom::CubicBezierSegment<f64>),
+        Arc(lyon_geom::Arc<f64>),
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -251,58 +261,44 @@ pub struct Geometry {
     pub element: GeometryElement,
 }
 impl Geometry {
-    pub fn poo() {
-        use euclid;
-        use lyon_path;
-        use lyon_path::builder::{FlatPathBuilder, PathBuilder};
-
-        let mut builder = lyon_path::default::Path::builder();
-        builder.move_to(euclid::point2(0.0, 0.0));
-        builder.line_to(euclid::point2(1.0, 2.0));
-        builder.line_to(euclid::point2(2.0, 0.0));
-        builder.line_to(euclid::point2(1.0, 1.0));
-        builder.close();
-
-        let path = builder.build();
-        for event in &path {
-            println!("{:?}", event);
-        }
-    }
-
-    pub fn blah(&self) {
+    pub fn as_segment(&self) -> types::Segment {
         use euclid;
         match self.element {
             GeometryElement::Line => {
-                /*
-                let g: &opendrive::Geometry = &plan_view.geometries[0];
-                let start = euclid::TypedVector2D::from_lengths(g.x, g.y);
-                let rot = opendrive::types::Rotation::new(g.hdg);
+                let start = euclid::TypedPoint2D::from_lengths(self.x, self.y);
+                let rot = types::Rotation::new(self.hdg);
                 let v = euclid::TypedVector2D::from_lengths(
-                    g.length,
-                    opendrive::types::Length::new(0.0),
+                    self.length,
+                    types::Length::new(0.0),
                 );
                 let end = start + rot.transform_vector(&v);
-
-                let g1: &opendrive::Geometry = &plan_view.geometries[1];
-                let start1 = euclid::TypedVector2D::from_lengths(g1.x, g1.y);
-
-                println!("start: {:#?}, end: {:#?}", start, end);
-                assert_eq!(end, start1);
-                */
+                types::Segment::Line(lyon_geom::LineSegment { from: start, to: end })
             }
             GeometryElement::Spiral {
                 curv_start,
                 curv_end,
-            } => {}
+            } => {
+                types::Segment::Line(lyon_geom::LineSegment { from: euclid::point2(0.0, 0.0), to: euclid::point2(0.0, 0.0) })
+            }
             GeometryElement::Arc { curvature } => {
                 let start = euclid::TypedVector2D::from_lengths(self.x, self.y);
 
                 let start_angle = self.hdg;
-                let sweep_angle = self.length * curvature;
+                let sweep_angle = types::Angle::radians((self.length * curvature).get());
                 let rot = types::Rotation::new(self.hdg);
                 //let center = (rot - opendrive::types::Angle::frac_pi_4).tran
+
+                types::Segment::Arc(lyon_geom::Arc {
+                    center: euclid::Point2D::new(0.0, 0.0),
+                    radii: euclid::vec2(1.0, 1.0),
+                    start_angle: start_angle,
+                    sweep_angle: sweep_angle,
+                    x_rotation: euclid::Angle::zero()
+                })
             }
-            GeometryElement::Poly3 { a, b, c, d } => {}
+            GeometryElement::Poly3 { a, b, c, d } => {
+                types::Segment::Line(lyon_geom::LineSegment { from: euclid::point2(0.0, 0.0), to: euclid::point2(0.0, 0.0) })
+            }
         }
     }
 }
