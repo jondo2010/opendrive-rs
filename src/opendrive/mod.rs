@@ -8,22 +8,7 @@ pub mod units {
     pub struct Meter;
 }
 
-pub mod types {
-    use euclid;
-    use lyon_geom;
-
-    pub type Length = euclid::Length<f64, euclid::UnknownUnit>; //, super::units::Meter>;
-    pub type Angle = euclid::Angle<f64>;
-
-    pub type Rotation = euclid::TypedRotation2D<f64, euclid::UnknownUnit, euclid::UnknownUnit>; //, super::units::Meter, super::units::Meter>;
-
-    pub enum Segment {
-        Line(lyon_geom::LineSegment<f64>),
-        Quadratic(lyon_geom::QuadraticBezierSegment<f64>),
-        Cubic(lyon_geom::CubicBezierSegment<f64>),
-        Arc(lyon_geom::Arc<f64>),
-    }
-}
+pub mod types;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "OpenDRIVE")]
@@ -211,11 +196,20 @@ pub struct PlanView {
 impl PlanView {
     pub fn validate(&self) -> Result<(), errors::ValidationError> {
         use super::Monotonic;
+        use lyon_geom::Segment;
 
         // The s values in each Geometry element must monotonically increase
         if !self.geometries.iter().map(|g| g.s).is_monotonic() {
             return Err(errors::ValidationError::ReferenceLineGeometry(
                 "s values in geometry not monotonic",
+            ));
+        }
+
+        // Ensure that the start and end points of each segment match
+        let s = self.geometries.iter().map(|g| g.as_segment());
+        if !s.clone().zip(s.skip(1)).by_ref().all(|(a, b)| a.to() == b.from()) {
+            return Err(errors::ValidationError::ReferenceLineGeometry(
+                "not all start and end points align"
             ));
         }
 
@@ -261,44 +255,49 @@ pub struct Geometry {
     pub element: GeometryElement,
 }
 impl Geometry {
-    pub fn as_segment(&self) -> types::Segment {
+    /// Convert the OpenDRIVE types into a type that implements `lyon_geom::Segment`
+    pub fn as_segment(&self) -> types::Segment<f64> {
         use euclid;
         match self.element {
             GeometryElement::Line => {
                 let start = euclid::TypedPoint2D::from_lengths(self.x, self.y);
                 let rot = types::Rotation::new(self.hdg);
-                let v = euclid::TypedVector2D::from_lengths(
-                    self.length,
-                    types::Length::new(0.0),
-                );
+                let v = euclid::TypedVector2D::from_lengths(self.length, types::Length::new(0.0));
                 let end = start + rot.transform_vector(&v);
-                types::Segment::Line(lyon_geom::LineSegment { from: start, to: end })
+                types::Segment::Line(lyon_geom::LineSegment {
+                    from: start,
+                    to: end,
+                })
             }
             GeometryElement::Spiral {
                 curv_start,
                 curv_end,
-            } => {
-                types::Segment::Line(lyon_geom::LineSegment { from: euclid::point2(0.0, 0.0), to: euclid::point2(0.0, 0.0) })
-            }
+            } => types::Segment::Line(lyon_geom::LineSegment {
+                from: euclid::point2(0.0, 0.0),
+                to: euclid::point2(0.0, 0.0),
+            }),
             GeometryElement::Arc { curvature } => {
-                let start = euclid::TypedVector2D::from_lengths(self.x, self.y);
-
+                let radius = 1.0 / curvature;
                 let start_angle = self.hdg;
                 let sweep_angle = types::Angle::radians((self.length * curvature).get());
-                let rot = types::Rotation::new(self.hdg);
-                //let center = (rot - opendrive::types::Angle::frac_pi_4).tran
+
+                // Find the center by rotating the vector (0.0, radius) by the heading
+                let center = types::Rotation::new(self.hdg)
+                    .transform_point(&euclid::point2(0.0, radius))
+                    + euclid::TypedVector2D::from_lengths(self.x, self.y);
 
                 types::Segment::Arc(lyon_geom::Arc {
-                    center: euclid::Point2D::new(0.0, 0.0),
-                    radii: euclid::vec2(1.0, 1.0),
+                    center: center,
+                    radii: euclid::vec2(radius, radius),
                     start_angle: start_angle,
                     sweep_angle: sweep_angle,
-                    x_rotation: euclid::Angle::zero()
+                    x_rotation: -euclid::Angle::frac_pi_2(), // OpenDRIVE zero-heading is pi/2 rotated from the lyon_geom::Arc
                 })
             }
-            GeometryElement::Poly3 { a, b, c, d } => {
-                types::Segment::Line(lyon_geom::LineSegment { from: euclid::point2(0.0, 0.0), to: euclid::point2(0.0, 0.0) })
-            }
+            GeometryElement::Poly3 { a, b, c, d } => types::Segment::Line(lyon_geom::LineSegment {
+                from: euclid::point2(0.0, 0.0),
+                to: euclid::point2(0.0, 0.0),
+            }),
         }
     }
 }

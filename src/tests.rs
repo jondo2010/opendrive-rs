@@ -1,3 +1,21 @@
+macro_rules! assert_approx_eq {
+    ($a:expr, $b:expr) => ({
+        let eps = 1.0e-6;
+        let (a, b) = (&$a, &$b);
+        assert!((*a - *b).abs() < eps,
+                "assertion failed: `(left !== right)` \
+                           (left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
+                 *a, *b, eps, (*a - *b).abs());
+    });
+    ($a:expr, $b:expr, $eps:expr) => ({
+        let (a, b) = (&$a, &$b);
+        assert!((*a - *b).abs() < $eps,
+                "assertion failed: `(left !== right)` \
+                           (left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
+                 *a, *b, $eps, (*a - *b).abs());
+    })  
+}
+
 #[test]
 fn test_monotonic() {
     use super::Monotonic;
@@ -99,7 +117,10 @@ mod parsing {
         "##;
         use serde_xml_rs::from_str;
         let geo: opendrive::Geometry = from_str(s).unwrap();
-        assert_eq!(geo.hdg, opendrive::types::Angle::radians(7.9998293398869432e-03));
+        assert_eq!(
+            geo.hdg,
+            opendrive::types::Angle::radians(7.9998293398869432e-03)
+        );
     }
 
     #[test]
@@ -194,35 +215,29 @@ mod parsing {
         assert_eq!(
             lanes.lane_sections[0].left,
             Some(opendrive::LaneSubSection {
-                lane: vec![
-                    opendrive::Lane {
-                        id: 1,
-                        lane_type: opendrive::LaneType::Driving,
-                        level: false,
-                        link: Some(Default::default()),
-                        widths: vec![
-                            opendrive::Width {
-                                s_offset: 0.0,
-                                a: 3.25,
-                                b: 0.0,
-                                c: 0.0,
-                                d: 0.0,
-                            },
-                        ],
-                        road_marks: vec![
-                            opendrive::RoadMark {
-                                s_offset: 0.0,
-                                road_mark_type: opendrive::RoadMarkType::Solid,
-                                weight: opendrive::RoadMarkWeight::Standard,
-                                color: opendrive::RoadMarkColor::Standard,
-                                material: None,
-                                width: 0.13,
-                                lane_change: opendrive::LaneChangeType::Both,
-                                height: 0.0,
-                            },
-                        ],
-                    },
-                ],
+                lane: vec![opendrive::Lane {
+                    id: 1,
+                    lane_type: opendrive::LaneType::Driving,
+                    level: false,
+                    link: Some(Default::default()),
+                    widths: vec![opendrive::Width {
+                        s_offset: 0.0,
+                        a: 3.25,
+                        b: 0.0,
+                        c: 0.0,
+                        d: 0.0,
+                    }],
+                    road_marks: vec![opendrive::RoadMark {
+                        s_offset: 0.0,
+                        road_mark_type: opendrive::RoadMarkType::Solid,
+                        weight: opendrive::RoadMarkWeight::Standard,
+                        color: opendrive::RoadMarkColor::Standard,
+                        material: None,
+                        width: 0.13,
+                        lane_change: opendrive::LaneChangeType::Both,
+                        height: 0.0,
+                    }],
+                }],
             })
         );
     }
@@ -237,9 +252,11 @@ mod parsing {
             <geometry s="2.0721630948442136e+00" x="3.4008391843292344e+01" y="-4.3421826556979193e+00" hdg="7.9998293398872988e-03" length="5.7125709578755304e+00">
                 <spiral curvStart="-0.0" curvEnd="-5.9114369622925669e-02"/>
             </geometry>
+
             <geometry s="7.7847340527197435e+00" x="3.9707082592335631e+01" y="-4.6174670591660050e+00" hdg="-1.6084768620939371e-01" length="6.0636650000000021e+00">
                 <arc curvature="-5.9114369622925669e-02"/>
             </geometry>
+
             <geometry s="1.3848399052719746e+01" x="4.5392930162567524e+01" y="-6.6292251856718263e+00" hdg="-5.1929742028899106e-01" length="5.7125709578755304e+00">
                  <spiral curvStart="-5.9114369622925669e-02" curvEnd="-0.0"/>
             </geometry>
@@ -249,12 +266,14 @@ mod parsing {
             <geometry s="2.0454592637603671e+01" x="5.0686941495122845e+01" y="-1.0566681138196444e+01" hdg="-6.8814493584075453e-01" length="6.2066121627724709e+00">
                 <spiral curvStart="0.0" curvEnd="8.0978518504482233e-02"/>
             </geometry>
+
             <geometry s="2.6661204800376140e+01" x="5.5779610165223573e+01" y="-1.4083929379520304e+01" hdg="-4.3684380690538838e-01" length="5.0000000000000014e+01">
                 <arc curvature="8.0978518504482233e-02"/>
             </geometry>
             <geometry s="7.6661204800376154e+01" x="5.5406167361537790e+01" y="8.1125499406994486e+00" hdg="-2.6711031888558949e+00" length="6.2066121627724709e+00">
                  <spiral curvStart="8.0978518504482233e-02" curvEnd="0.0000000000000000e+00"/>
             </geometry>
+
             <geometry s="8.2867816963148627e+01" x="5.0434698751727190e+01" y="4.4259784662547794e+00" hdg="-2.4198020599242533e+00" length="5.7004576686428177e+00">
                 <line/>
             </geometry>
@@ -275,11 +294,45 @@ mod parsing {
         use serde_xml_rs::from_str;
         let plan_view: opendrive::PlanView = from_str(s).unwrap();
         assert_eq!(plan_view.validate().unwrap(), ());
-        println!("Length: {}", plan_view.sum_length());
+        //println!("Length: {}", plan_view.sum_length());
 
-        let g = &plan_view.geometries[0];
-        g.as_segment().
-        
+        use lyon_geom::Segment;
+        let seg6 = plan_view.geometries[6].as_segment();
+
+        //println!("1 from: {:?}, to: {:?}", seg1.from(), seg1.to());
+        println!(
+            "6: {:?}",
+            (plan_view.geometries[6].x, plan_view.geometries[6].y)
+        );
+        println!("6 from: {:?}, to: {:?}", seg6.from(), seg6.to());
+        println!(
+            "7: {:?}",
+            (plan_view.geometries[7].x, plan_view.geometries[7].y)
+        );
+        //println!("2 from: {:?}, to: {:?}", seg3.from(), seg3.to());
+        //assert_eq!(seg0.to(), seg1.from());
+
+        //println!("{:?}", seg6.approximate_length(0.01));
+    }
+
+    #[test]
+    fn test_arc() {
+        let geo0 = opendrive::Geometry {
+            s: opendrive::types::Length::new(0.0),
+            x: opendrive::types::Length::new(0.0),
+            y: opendrive::types::Length::new(0.0),
+            hdg: opendrive::types::Angle::degrees(0.0),
+            length: opendrive::types::Length::new(opendrive::types::Angle::frac_pi_2().radians),
+            element: opendrive::GeometryElement::Arc {
+                curvature: 1.0 / 1.0,
+            },
+        };
+        use lyon_geom::Segment;
+        let s0 = geo0.as_segment();
+        assert_approx_eq!(s0.x(0.0), geo0.x.0);
+        assert_approx_eq!(s0.y(0.0), geo0.y.0);
+        assert_approx_eq!(s0.x(1.0), 1.0);
+        assert_approx_eq!(s0.y(1.0), 1.0);
     }
 
     #[test]
