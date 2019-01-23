@@ -1,5 +1,3 @@
-use euclid;
-use lyon_geom;
 use std::ops::Range;
 
 pub type Length = euclid::Length<f64, euclid::UnknownUnit>; //, super::units::Meter>;
@@ -18,6 +16,8 @@ pub enum Segment<S> {
 /// Forward all trait functions through to the underlying types
 impl lyon_geom::Segment for Segment<f64> {
     type Scalar = f64;
+
+    //fn from(&self) -> euclid::Point<Self::Scalar> {
     fn from(&self) -> euclid::Point2D<Self::Scalar> {
         match self {
             Segment::Line(ref line) => line.from(),

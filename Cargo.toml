@@ -1,25 +1,17 @@
 [package]
-authors = ["John Hughes <john.hughes@aid-driving.eu>"]
+authors = ["John Hughes <jondo2010@gmail.com>"]
 name = "opendrive-rs"
 version = "0.1.0"
+edition = "2018"
+
 [dependencies]
-failure = "0.1.1"
+failure = "0.1.5"
 failure_derive = "0.1.1"
-log = "0.3.6"
+log = "0.4.6"
 lyon_geom = { path = "lyon_geom" }
 lyon_path = "0.10.1"
-proj5 = "0.1.4"
-serde = "1.0.52"
-serde_derive = "1.0.52"
-
-[dependencies.chrono]
-features = ["serde"]
-version = "0.4.2"
-
-[dependencies.euclid]
-features = ["serde"]
-version = "0.17.3"
-
-[dependencies.serde-xml-rs]
-branch = "master"
-git = "https://github.com/RReverser/serde-xml-rs"
+proj5 = "0.1.6"
+serde = { version = "1.0.85", features = ["derive"] }
+chrono = { version = "0.4.6", features = ["serde"] }
+euclid = {  version = "0.19.5", features = ["serde"] }
+serde-xml-rs = { branch = "master", git = "https://github.com/RReverser/serde-xml-rs" }

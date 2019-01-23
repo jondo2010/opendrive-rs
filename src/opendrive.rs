@@ -1,14 +1,17 @@
-use chrono;
 use crate::errors;
+use crate::parse_util;
+use chrono;
 use lyon_geom;
 use lyon_path;
-use crate::parse_util;
+
+use serde::{de, Deserialize, Serialize};
 
 pub mod units {
     pub struct Meter;
 }
 
-pub mod types;
+//pub mod types;
+pub use crate::types;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "OpenDRIVE")]
@@ -207,9 +210,14 @@ impl PlanView {
 
         // Ensure that the start and end points of each segment match
         let s = self.geometries.iter().map(|g| g.as_segment());
-        if !s.clone().zip(s.skip(1)).by_ref().all(|(a, b)| a.to() == b.from()) {
+        if !s
+            .clone()
+            .zip(s.skip(1))
+            .by_ref()
+            .all(|(a, b)| a.to() == b.from())
+        {
             return Err(errors::ValidationError::ReferenceLineGeometry(
-                "not all start and end points align"
+                "not all start and end points align",
             ));
         }
 
@@ -294,7 +302,12 @@ impl Geometry {
                     x_rotation: -euclid::Angle::frac_pi_2(), // OpenDRIVE zero-heading is pi/2 rotated from the lyon_geom::Arc
                 })
             }
-            GeometryElement::Poly3 { a: _, b: _, c: _, d: _ } => types::Segment::Line(lyon_geom::LineSegment {
+            GeometryElement::Poly3 {
+                a: _,
+                b: _,
+                c: _,
+                d: _,
+            } => types::Segment::Line(lyon_geom::LineSegment {
                 from: euclid::point2(0.0, 0.0),
                 to: euclid::point2(0.0, 0.0),
             }),

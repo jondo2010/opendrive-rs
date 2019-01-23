@@ -1,19 +1,11 @@
-extern crate failure;
-#[macro_use] extern crate failure_derive;
-extern crate serde;
-#[macro_use] extern crate serde_derive;
-extern crate chrono;
-extern crate serde_xml_rs;
-extern crate proj5;
-extern crate euclid;
-extern crate lyon_geom;
-extern crate lyon_path;
-
 mod errors;
 mod opendrive;
 mod parse_util;
-#[cfg(test)] mod tests;
-#[cfg(test)] mod tests2;
+#[cfg(test)]
+mod tests;
+#[cfg(test)]
+mod tests2;
+pub mod types;
 
 pub use crate::opendrive::*;
 
