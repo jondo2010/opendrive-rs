@@ -15,7 +15,7 @@ mod parse_util;
 #[cfg(test)] mod tests;
 #[cfg(test)] mod tests2;
 
-pub use opendrive::*;
+pub use crate::opendrive::*;
 
 /// Check if a collection is monotonically increasing
 trait Monotonic: Iterator {

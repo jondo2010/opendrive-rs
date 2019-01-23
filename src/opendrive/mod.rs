@@ -1,8 +1,8 @@
 use chrono;
-use errors;
+use crate::errors;
 use lyon_geom;
 use lyon_path;
-use parse_util;
+use crate::parse_util;
 
 pub mod units {
     pub struct Meter;
@@ -270,8 +270,8 @@ impl Geometry {
                 })
             }
             GeometryElement::Spiral {
-                curv_start,
-                curv_end,
+                curv_start: _,
+                curv_end: _,
             } => types::Segment::Line(lyon_geom::LineSegment {
                 from: euclid::point2(0.0, 0.0),
                 to: euclid::point2(0.0, 0.0),
@@ -294,7 +294,7 @@ impl Geometry {
                     x_rotation: -euclid::Angle::frac_pi_2(), // OpenDRIVE zero-heading is pi/2 rotated from the lyon_geom::Arc
                 })
             }
-            GeometryElement::Poly3 { a, b, c, d } => types::Segment::Line(lyon_geom::LineSegment {
+            GeometryElement::Poly3 { a: _, b: _, c: _, d: _ } => types::Segment::Line(lyon_geom::LineSegment {
                 from: euclid::point2(0.0, 0.0),
                 to: euclid::point2(0.0, 0.0),
             }),

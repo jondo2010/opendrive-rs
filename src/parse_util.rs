@@ -51,7 +51,7 @@ pub mod odr_dateformat {
 /// from the euclid crate in order to flatten the value
 pub mod angle {
     use serde::{self, Deserialize, Deserializer, Serializer};
-    use types;
+    use crate::types;
 
     pub fn serialize<S>(angle: &types::Angle, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -65,6 +65,6 @@ pub mod angle {
     where
         D: Deserializer<'de>,
     {
-        Ok(types::Angle::radians(try!(Deserialize::deserialize(deserializer))))
+        Ok(types::Angle::radians(r#try!(Deserialize::deserialize(deserializer))))
     }
 }

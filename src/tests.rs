@@ -32,7 +32,7 @@ fn test_monotonic() {
 
 #[cfg(test)]
 mod parsing {
-    use opendrive;
+    use crate::opendrive;
 
     #[test]
     fn test_header() {
@@ -341,7 +341,7 @@ mod parsing {
         use std::fs::File;
         let path = "CulDeSac.xodr";
         let file = File::open(&path).unwrap();
-        let root: opendrive::Root = serde_xml_rs::from_reader(&file).unwrap();
+        let _root: opendrive::Root = serde_xml_rs::from_reader(&file).unwrap();
         //println!("{:#?}", root);
     }
 }

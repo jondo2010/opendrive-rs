@@ -1,4 +1,4 @@
-use types;
+use crate::types;
 
 #[derive(Debug, Fail)]
 pub enum ValidationError {
